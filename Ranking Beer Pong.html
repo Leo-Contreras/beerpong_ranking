@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ranking Beer Pong</title>
+<style>
+:root{--bg:#f6f3ee;--cd:#fff;--tx:#1d1b18;--mu:#6d675e;--bd:#e3ddd2;--ac:#d9480f;--g:#2b8a3e;--r:#c92a2a;--gb:#e6f6e9;--rb:#fdeaea;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130f;--cd:#201d17;--tx:#f2ede4;--mu:#a39b8d;--bd:#352f26;--ac:#ff8a4c;--g:#69db7c;--r:#ff8787;--gb:#1d3324;--rb:#3a1f1f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15130f;--cd:#201d17;--tx:#f2ede4;--mu:#a39b8d;--bd:#352f26;--ac:#ff8a4c;--g:#69db7c;--r:#ff8787;--gb:#1d3324;--rb:#3a1f1f;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:20px 14px 60px}
+h1{font:800 clamp(26px,6vw,38px)/1.05 Impact,"Arial Black",system-ui,sans-serif;letter-spacing:.5px;text-transform:uppercase;margin:6px 0 4px}
+h1 span{color:var(--ac)}
+.sub{color:var(--mu);margin:0 0 16px}
+.tabs{display:flex;gap:6px;margin:14px 0;flex-wrap:wrap}
+.tabs button{border:1px solid var(--bd);background:var(--cd);color:var(--tx);padding:8px 14px;border-radius:99px;font:600 14px inherit;cursor:pointer}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.card{background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:14px}
+.ladder{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{font:700 12px system-ui;padding:4px 10px;border-radius:99px;color:#111;white-space:nowrap}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th{font:600 12px system-ui;text-transform:uppercase;color:var(--mu);text-align:left;padding:6px 8px;border-bottom:1px solid var(--bd)}
+td{padding:10px 8px;border-bottom:1px solid var(--bd)}
+tr.row{cursor:pointer}tr.row:hover td{background:color-mix(in srgb,var(--ac) 8%,transparent)}
+.rk{font:800 18px Impact,system-ui;width:36px}
+.elo{font-weight:800;font-size:17px}
+.up{color:var(--g)}.dn{color:var(--r)}
+.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+label{display:block;font:600 12px system-ui;color:var(--mu);margin-bottom:4px;text-transform:uppercase}
+select,input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:inherit}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:10px;padding:11px 16px;font:700 14px inherit;cursor:pointer}
+.btn.s{background:transparent;color:var(--mu);border:1px solid var(--bd);padding:4px 9px;font-size:12px}
+.note{font-size:13px;color:var(--mu);margin:8px 0 0}
+.msg{margin:8px 0 0;font-weight:600}
+.ml{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)}
+.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:14px;z-index:20}
+.modal.on{display:flex}
+.mb{background:var(--cd);border-radius:16px;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:18px}
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.pc div{border-radius:10px;padding:10px;font-size:14px}
+.pc ul{margin:4px 0 0;padding-left:18px}
+.pros{background:var(--gb)}.cons{background:var(--rb)}
+.st{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}.st b{display:block;font-size:20px}
+code{background:var(--bg);padding:2px 6px;border-radius:6px}
+@media(max-width:480px){.pc{grid-template-columns:1fr}}
+</style></head><body><main>
+<h1>Ranking <span>Beer Pong</span></h1>
+<p class="sub">Sistema Elo: tu posición depende de a quién le ganas, no solo de cuánto juegas.</p>
+<div class="tabs" id="tabs"></div>
+<div id="v"></div>
+</main>
+<div class="modal" id="md"><div class="mb" id="mb"></div></div>
+<script>
+const T=[["Bronce",0,"#cd7f32","< 900"],["Plata",900,"#aeb4bb","900–999"],["Oro",1000,"#f2c200","1000–1099"],["Esmeralda",1100,"#2fb36d","1100–1199"],["Platino",1200,"#4aa3c7","1200–1299"],["Diamante",1300,"#22d3ee","1300–1399"],["Maestro",1400,"#a855f7","1400+"]];
+const SEED=[850,950,1050,1150,1250,1350];
+const tierOf=r=>{let t=T[0];for(const x of T)if(r>=x[1])t=x;return t};
+const P=[
+["Joel",0,["John Cena"],["Ninguna"]],
+["Sara",0,["Tanquea"],["Se inflama rápido"]],
+["Jazmín",0,["Ninguno"],["Vive en el Maclovio Rojas"]],
+["Perla",0,["¿Quién?"],[]],
+["Giorgio",1,["Juegos donde parece Platino","Le ganó a Leo Contreras en fase de grupos"],["Kim siempre se lo lleva temprano"]],
+["Camila",1,["Es joven"],[]],
+["Sergio",2,["Guerrero dragón","Aprende rápido"],["Eso le pasa por andar de cachondo"]],
+["Frida",2,["Excelente soporte"],["Trágico carry"]],
+["Kim",2,["Juegos donde parece Esmeralda"],["Juegos donde parece Bronce","2 juegos y se retira"]],
+["Rebeca",2,["Tanquea bien macizo"],["Se trepa a la mesa"]],
+["Alex",3,["Constante","No gordas"],["De las mochilas más pesadas de toda el área limítrofe (cuando aplica)","Puede estar sujeto a presión"]],
+["Leo",4,["Bueno cuando se concentra","Heterosexual"],["Una completa kgada cuando no se concentra (casi siempre)","Tiró avión","No levanta por el equipo","Ferretero"]],
+["Bowo",4,["Versátil","La única de las mujeres que apunta"],["4to lugar"]],
+["Emma",4,["Buen carry","Juega Nami"],["Factor alcohol","Se chingó el memory foam del Leo"]],
+["Luis",4,["Los primeros 2 juegos","Dawg"],["3er, 4to, 5to, 6to… juego"]],
+["Kevineitor",4,["Hay reuniones en las que es Esmeralda","Juego con Maiki","Snupi"],["Hay reuniones en las que es Oro","Último vaso"]],
+["El Bala",5,["El mismo","8 cm"],["El mismo"]]
+];
+const K=32,BONUS=.05;
+let matches=[],extra=[],db=null,loaded=false,tab="rk",msg="",mode=1;
+const ar=v=>Array.isArray(v)?v:[v];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function calc(){
+  const R={},S={};
+  const names=[...P.map(p=>p[0]),...extra.map(e=>e.name)];
+  names.forEach(n=>{const p=P.find(x=>x[0]===n);R[n]=p?SEED[p[1]]:1000;S[n]={w:0,l:0,st:0,last:0,log:[]}});
+  [...matches].sort((a,b)=>a.t-b.t).forEach(m=>{
+    const W=ar(m.w),L=ar(m.l);
+    if(!W.length||W.length!==L.length||[...W,...L].some(x=>!(x in R))||new Set([...W,...L]).size<W.length*2)return;
+    const avg=a=>a.reduce((s,x)=>s+R[x],0)/a.length;
+    const e=1/(1+Math.pow(10,(avg(L)-avg(W))/400));
+    const d=K*(1+BONUS*(m.c-1))*(1-e);
+    W.forEach(x=>{const a=S[x];R[x]+=d;a.w++;a.st=a.st>0?a.st+1:1;a.last=d;a.log.push({o:L.join(" y "),mate:W.filter(y=>y!==x)[0],win:1,c:m.c,d})});
+    L.forEach(x=>{const a=S[x];R[x]-=d;a.l++;a.st=a.st<0?a.st-1:-1;a.last=-d;a.log.push({o:W.join(" y "),mate:L.filter(y=>y!==x)[0],win:0,c:m.c,d:-d})});
+  });
+  return names.map(n=>({n,r:R[n],...S[n]})).sort((a,b)=>b.r-a.r);
+}
+
+function render(){
+  $("#tabs").innerHTML=[["rk","Ranking"],["reg","Registrar partido"],["how","Cómo funciona"]].map(([k,l])=>`<button class="${tab===k?"on":""}" data-t="${k}">${l}</button>`).join("");
+  const rows=calc(),ch=rows.find(p=>p.r>=1400);
+  let h="";
+  if(tab==="rk"){
+    h=`<div class="card" style="text-align:center;border-color:#a855f7">${ch?`<div style="font-size:30px">👑</div><b>Gran Campeón del Birpo</b><div style="font:800 26px Impact,system-ui">${esc(ch.n)}</div><div class="note">${Math.round(ch.r)} Elo</div>`:`<b>👑 Trono vacío</b><div class="note">El primero en llegar a 1400 Elo (Maestro) será el Gran Campeón del Birpo. Solo hay uno: el Maestro con más Elo.</div>`}</div><div class="ladder">${T.map(t=>`<span class="chip" style="background:${t[2]}">${t[0]} ${t[3]}</span>`).join("")}</div>
+    <div class="card tw"><table><tr><th>#</th><th>Jugador</th><th>Elo</th><th>V–D</th><th>% Vic.</th><th>Racha</th><th>Último</th></tr>
+    ${rows.map((p,i)=>{const t=tierOf(p.r),g=p.w+p.l;return `<tr class="row" data-p="${esc(p.n)}"><td class="rk">${i+1}</td>
+    <td><b>${esc(p.n)}${ch&&ch.n===p.n?" 👑":""}</b><br><span class="chip" style="background:${t[2]}">${ch&&ch.n===p.n?"Gran Campeón del Birpo":t[0]}</span></td>
+    <td class="elo">${Math.round(p.r)}</td><td>${p.w}–${p.l}</td><td>${g?Math.round(p.w/g*100)+"%":"—"}</td>
+    <td class="${p.st>0?"up":p.st<0?"dn":""}">${p.st>0?"🔥 "+p.st+"V":p.st<0?p.st*-1+"D":"—"}</td>
+    <td class="${p.last>0?"up":"dn"}">${g?(p.last>0?"+":"")+p.last.toFixed(1):"—"}</td></tr>`}).join("")}</table></div>
+    <p class="note">Toca un jugador para ver su perfil, pros y contras.${loaded?"":" Cargando datos…"}</p>`;
+  }else if(tab==="reg"){
+    const o=rows.map(p=>`<option>${esc(p.n)}</option>`).join("");
+    const rec=[...matches].sort((a,b)=>b.t-a.t).slice(0,15);
+    h=`<div class="card"><div class="f">
+    <div><label>Formato</label><select id="mo"><option value="1" ${mode==1?"selected":""}>1 vs 1</option><option value="2" ${mode==2?"selected":""}>Dúo (2 vs 2)</option></select></div>
+    <div><label>${mode==2?"Ganadores (dúo)":"Ganador"}</label><select id="w">${o}</select>${mode==2?`<select id="w2" style="margin-top:6px">${o}</select>`:""}</div>
+    <div><label>${mode==2?"Perdedores (dúo)":"Perdedor"}</label><select id="l">${o}</select>${mode==2?`<select id="l2" style="margin-top:6px">${o}</select>`:""}</div>
+    <div><label>Vasos que le quedaban al ganador</label><select id="c">${Array.from({length:10},(_,i)=>`<option ${i==2?"selected":""}>${i+1}</option>`).join("")}</select></div>
+    <div><button class="btn" id="add">Registrar</button></div></div>
+    <p class="note">1 vaso = ganó apenas · 10 vasos = barrida total (más puntos).</p><p class="msg" id="msg">${esc(msg)}</p></div>
+    <div class="card"><b>Últimos partidos</b>${rec.length?rec.map(m=>`<div class="ml"><span><b>${ar(m.w).map(esc).join(" y ")}</b> le ganó a ${ar(m.l).map(esc).join(" y ")} <span style="color:var(--mu)">(${m.c} vasos)</span></span><button class="btn s" data-d="${m.id}">Borrar</button></div>`).join(""):`<p class="note">Aún no hay partidos registrados.</p>`}</div>
+    <div class="card"><b>Agregar jugador nuevo</b><div class="f" style="margin-top:8px"><div><label>Nombre</label><input id="np" maxlength="20"></div><div><button class="btn" id="addp">Agregar (empieza en 1000)</button></div></div></div>
+    ${db?"":`<p class="note">Modo local: los datos se guardan solo en este navegador.</p>`}`;
+  }else{
+    h=`<div class="card"><b>1. Punto de partida</b><p>Cada quien empieza en el rating de su nivel actual: ${T.slice(0,6).map((t,i)=>`${t[0]} ${SEED[i]}`).join(" · ")}. Los jugadores nuevos empiezan en 1000.</p>
+    <b>2. Probabilidad esperada</b><p><code>E = 1 / (1 + 10^((Elo rival − Elo tuyo) / 400))</code><br>Si eres Platino y juegas contra Bronce, se espera que ganes casi siempre.</p>
+    <b>3. Cambio de puntos</b><p><code>Δ = K × (1 + 0.05 × (vasos − 1)) × (1 − E)</code> con K = ${K}.<br>El ganador suma Δ y el perdedor resta lo mismo. Ganarle a alguien mejor da muchos puntos; ganarle a alguien flojo da pocos.</p>
+    <b>4. Bonus por margen</b><p>Cada vaso que te sobra al ganar suma 5% extra (hasta +45% con 10 vasos).</p>
+    <b>5. Rangos dinámicos</b><p>El nivel (Bronce a Maestro) se calcula con tu Elo actual, así que se sube y se baja de nivel jugando.</p>
+    <b>6. Gran Campeón del Birpo 👑</b><p>Desde 1400 Elo eres Maestro. Solo uno lleva el título de Gran Campeón: el Maestro con más Elo. Si alguien lo supera, la corona cambia de manos.</p>
+    <b>7. Partidos en dúo</b><p>El rating de cada dúo es el promedio del Elo de sus dos integrantes. Se calcula la probabilidad esperada entre los dos dúos y el cambio de puntos se aplica completo a cada integrante. El Elo es uno solo por jugador, sea en 1 vs 1 o en dúo.</p>
+    <div class="ladder">${T.map(t=>`<span class="chip" style="background:${t[2]}">${t[0]} ${t[3]}</span>`).join("")}</div>
+    <p class="note">Todo se recalcula desde el historial de partidos: si borras uno mal registrado, el ranking se corrige solo.</p></div>`;
+  }
+  $("#v").innerHTML=h;
+}
+
+function profile(n){
+  const all=calc(),p=all.find(x=>x.n===n),ch=all.find(x=>x.r>=1400),b=P.find(x=>x[0]===n),t=tierOf(p.r),g=p.w+p.l;
+  const li=l=>l.length?`<ul>${l.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:`<div style="color:var(--mu)">—</div>`;
+  $("#mb").innerHTML=`<div style="display:flex;justify-content:space-between;align-items:start"><div><h2 style="margin:0">${esc(n)}</h2><span class="chip" style="background:${t[2]}">${ch&&ch.n===n?"👑 Gran Campeón del Birpo":t[0]}</span></div><button class="btn s" id="cl">Cerrar</button></div>
+  <div class="st"><span><b>${Math.round(p.r)}</b>Elo</span><span><b>${p.w}–${p.l}</b>Récord</span><span><b>${g?Math.round(p.w/g*100)+"%":"—"}</b>Victorias</span></div>
+  ${b?`<div class="pc"><div class="pros"><b>Pros</b>${li(b[2])}</div><div class="cons"><b>Contras</b>${li(b[3])}</div></div>`:""}
+  <p><b>Últimos partidos</b></p>${p.log.slice(-6).reverse().map(x=>`<div class="ml"><span>${x.win?"Ganó":"Perdió"}${x.mate?" con "+esc(x.mate):""} vs ${esc(x.o)} (${x.c} vasos)</span><b class="${x.d>0?"up":"dn"}">${x.d>0?"+":""}${x.d.toFixed(1)}</b></div>`).join("")||`<p class="note">Sin partidos todavía.</p>`}`;
+  $("#md").classList.add("on");
+}
+
+function loc(){try{localStorage.setItem("bp",JSON.stringify({matches,extra}))}catch(e){}}
+async function addMatch(m){
+  if(db){await db.collection("matches").add(m)}else{matches.push({...m,id:"m"+m.t});loc();render()}
+}
+async function run(f){try{msg="";await f()}catch(e){msg="No se pudo guardar (¿tienes permiso para editar?)";render()}}
+
+document.addEventListener("click",e=>{
+  const t=e.target;
+  if(t.dataset.t){tab=t.dataset.t;msg="";render()}
+  else if(t.closest("[data-p]"))profile(t.closest("[data-p]").dataset.p);
+  else if(t.id==="cl"||t.id==="md")$("#md").classList.remove("on");
+  else if(t.id==="add"){
+    let w=$("#w").value,l=$("#l").value;
+    if(mode==2){w=[w,$("#w2").value];l=[l,$("#l2").value]}
+    if(new Set([...ar(w),...ar(l)]).size<ar(w).length*2){msg="Elige jugadores distintos en cada lugar.";return render()}
+    run(async()=>{await addMatch({w,l,c:+$("#c").value,t:Date.now()});msg="Partido registrado ✔";if(db)render()})
+  }
+  else if(t.id==="addp"){
+    const n=$("#np").value.trim();
+    if(!n||calc().some(p=>p.n.toLowerCase()===n.toLowerCase())){msg="Nombre vacío o repetido.";return render()}
+    run(async()=>{if(db)await db.collection("players").add({name:n,t:Date.now()});else{extra.push({id:"p"+Date.now(),name:n});loc();render()}})
+  }
+  else if(t.dataset.d){
+    run(async()=>{if(db)await db.collection("matches").doc(t.dataset.d).delete();else{matches=matches.filter(m=>m.id!==t.dataset.d);loc();render()}})
+  }
+});
+
+document.addEventListener("change",e=>{if(e.target.id==="mo"){mode=+e.target.value;msg="";render()}});
+render();
+(async()=>{
+  try{db=await claude.use("db")}catch(e){db=null}
+  if(!db){
+    try{const s=JSON.parse(localStorage.getItem("bp")||"{}");matches=s.matches||[];extra=s.extra||[]}catch(e){}
+    loaded=true;return render();
+  }
+  const tm=setTimeout(()=>{if(!loaded){msg="No se pudo contactar la base de datos aún.";render()}},10000);
+  const done=()=>{loaded=true;clearTimeout(tm);render()};
+  db.collection("matches").onSnapshot(s=>{matches=s.docs.map(d=>({id:d.id,...d.data()}));done()},done);
+  db.collection("players").onSnapshot(s=>{extra=s.docs.map(d=>({id:d.id,...d.data()}));done()},done);
+})();
+</script></body></html>
