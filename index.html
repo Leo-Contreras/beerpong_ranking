@@ -52,7 +52,7 @@ code{background:var(--bg);padding:2px 6px;border-radius:6px}
 </main>
 <div class="modal" id="md"><div class="mb" id="mb"></div></div>
 <script>
-const T=[["Bronce",0,"#cd7f32","< 900"],["Plata",900,"#aeb4bb","900–999"],["Oro",1000,"#f2c200","1000–1099"],["Esmeralda",1100,"#2fb36d","1100–1199"],["Platino",1200,"#4aa3c7","1200–1299"],["Diamante",1300,"#22d3ee","1300–1399"],["Maestro",1400,"#a855f7","1400+"]];
+const T=[["Bronce",0,"#cd7f32","< 900"],["Plata",900,"#aeb4bb","900–999"],["Oro",1000,"#f2c200","1000–1099"],["Platino",1100,"#4aa3c7","1100–1199"],["Esmeralda",1200,"#2fb36d","1200–1299"],["Diamante",1300,"#22d3ee","1300–1399"],["Maestro",1400,"#a855f7","1400+"]];
 const SEED=[850,950,1050,1150,1250,1350];
 const tierOf=r=>{let t=T[0];for(const x of T)if(r>=x[1])t=x;return t};
 const P=[
@@ -66,12 +66,12 @@ const P=[
 ["Frida",2,["Excelente soporte"],["Trágico carry"]],
 ["Kim",2,["Juegos donde parece Esmeralda"],["Juegos donde parece Bronce","2 juegos y se retira"]],
 ["Rebeca",2,["Tanquea bien macizo"],["Se trepa a la mesa"]],
-["Alex",3,["Constante","No gordas"],["De las mochilas más pesadas de toda el área limítrofe (cuando aplica)","Puede estar sujeto a presión"]],
-["Leo",4,["Bueno cuando se concentra","Heterosexual"],["Una completa kgada cuando no se concentra (casi siempre)","Tiró avión","No levanta por el equipo","Ferretero"]],
-["Bowo",4,["Versátil","La única de las mujeres que apunta"],["4to lugar"]],
-["Emma",4,["Buen carry","Juega Nami"],["Factor alcohol","Se chingó el memory foam del Leo"]],
-["Luis",4,["Los primeros 2 juegos","Dawg"],["3er, 4to, 5to, 6to… juego"]],
-["Kevineitor",4,["Hay reuniones en las que es Esmeralda","Juego con Maiki","Snupi"],["Hay reuniones en las que es Oro","Último vaso"]],
+["Alex",4,["Constante","No gordas"],["De las mochilas más pesadas de toda el área limítrofe (cuando aplica)","Puede estar sujeto a presión"]],
+["Leo",3,["Bueno cuando se concentra","Heterosexual"],["Una completa kgada cuando no se concentra (casi siempre)","Tiró avión","No levanta por el equipo","Ferretero"]],
+["Bowo",3,["Versátil","La única de las mujeres que apunta"],["4to lugar"]],
+["Emma",3,["Buen carry","Juega Nami"],["Factor alcohol","Se chingó el memory foam del Leo"]],
+["Luis",3,["Los primeros 2 juegos","Dawg"],["3er, 4to, 5to, 6to… juego"]],
+["Kevineitor",3,["Hay reuniones en las que es Esmeralda","Juego con Maiki","Snupi"],["Hay reuniones en las que es Oro","Último vaso"]],
 ["El Bala",5,["El mismo","8 cm"],["El mismo"]]
 ];
 const K=32,BONUS=.05;
