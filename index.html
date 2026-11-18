@@ -85,7 +85,7 @@ function sbDb(){
   return{collection:n=>({
     add:async o=>{const r=await fetch(U(n),{method:"POST",headers:{...H,Prefer:"return=minimal"},body:JSON.stringify(o)});if(!r.ok)throw new Error(r.status);poll()},
     doc:id=>({delete:async()=>{const r=await fetch(U(n)+"?id=eq."+encodeURIComponent(id),{method:"DELETE",headers:H});if(!r.ok)throw new Error(r.status);poll()}}),
-    onSnapshot:(cb,er)=>{let last="";const f=async()=>{try{const r=await fetch(U(n)+"?select=*",{headers:H});if(!r.ok)throw new Error(r.status);const rows=await r.json(),j=JSON.stringify(rows);if(j===last)return;last=j;cb({docs:rows.map(x=>({id:String(x.id),data:()=>x}))})}catch(e){er&&er(e)}};ps.push(f);f()}
+    onSnapshot:(cb,er)=>{let last="";const f=async()=>{try{const r=await fetch(U(n)+"?select=*&order=id.asc",{headers:H});if(!r.ok)throw new Error(r.status);const rows=await r.json(),j=JSON.stringify(rows);if(j===last)return;last=j;cb({docs:rows.map(x=>({id:String(x.id),data:()=>x}))})}catch(e){er&&er(e)}};ps.push(f);f()}
   })}
 }
 function localData(){try{const s=JSON.parse(localStorage.getItem("bp")||"{}");return{m:s.matches||[],p:s.extra||[]}}catch(e){return{m:[],p:[]}}}
@@ -148,7 +148,9 @@ function render(){
     <div class="ladder">${T.map(t=>`<span class="chip" style="background:${t[2]}">${t[0]} ${t[3]}</span>`).join("")}</div>
     <p class="note">Todo se recalcula desde el historial de partidos: si borras uno mal registrado, el ranking se corrige solo.</p></div>`;
   }
+  const keep={};["w","w2","l","l2","c","np"].forEach(i=>{const e=$("#"+i);if(e)keep[i]=e.value});
   $("#v").innerHTML=h;
+  for(const i in keep){const e=$("#"+i);if(e)e.value=keep[i]}
 }
 
 function profile(n){
@@ -206,7 +208,7 @@ render();
   }
   const tm=setTimeout(()=>{if(!loaded){msg="No se pudo contactar la base de datos aún.";render()}},10000);
   const done=()=>{loaded=true;clearTimeout(tm);render()};
-  db.collection("matches").onSnapshot(s=>{matches=s.docs.map(d=>({id:d.id,...d.data()}));done()},done);
-  db.collection("players").onSnapshot(s=>{extra=s.docs.map(d=>({id:d.id,...d.data()}));done()},done);
+  db.collection("matches").onSnapshot(s=>{matches=s.docs.map(d=>({id:d.id,...d.data()}));done()},()=>{if(!loaded)done()});
+  db.collection("players").onSnapshot(s=>{extra=s.docs.map(d=>({id:d.id,...d.data()}));done()},()=>{if(!loaded)done()});
 })();
 </script></body></html>
