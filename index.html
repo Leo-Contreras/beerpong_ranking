@@ -76,7 +76,7 @@ const P=[
 ];
 const K=32,BONUS=.05;
 /* ====== PEGA AQUÍ TUS DATOS DE SUPABASE (Project Settings > API) ====== */
-const SB_URL="https://dgekzxbjhkdoyulkhmbx.supabase.co/rest/v1/",SB_KEY="sb_publishable_xXhL4MPVDmp00XirLq6dpg_uhjdFHwC";
+const SB_URL="https://dgekzxbjhkdoyulkhmbx.supabase.co",SB_KEY="sb_publishable_xXhL4MPVDmp00XirLq6dpg_uhjdFHwC";
 function sbDb(){
   const H={apikey:SB_KEY,"Content-Type":"application/json"},ps=[];
   if(SB_KEY.startsWith("eyJ"))H.Authorization="Bearer "+SB_KEY;
