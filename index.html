@@ -82,9 +82,17 @@ function sbDb(){
   if(SB_KEY.startsWith("eyJ"))H.Authorization="Bearer "+SB_KEY;
   const U=t=>SB_URL.replace(/\/$/,"")+"/rest/v1/"+t,poll=()=>ps.forEach(f=>f());
   setInterval(()=>{if(!document.hidden)poll()},8000);
+  const rpc=async(f,a)=>{
+    let k=null;try{k=localStorage.getItem("bpk")}catch(e){}
+    if(!k)k=prompt("Clave para guardar cambios:");
+    if(!k)throw new Error("sin clave");
+    const r=await fetch(U("rpc/"+f),{method:"POST",headers:H,body:JSON.stringify({clave:k,...a})});
+    if(!r.ok){try{localStorage.removeItem("bpk")}catch(e){}throw new Error(r.status)}
+    try{localStorage.setItem("bpk",k)}catch(e){}
+    poll()};
   return{collection:n=>({
-    add:async o=>{const r=await fetch(U(n),{method:"POST",headers:{...H,Prefer:"return=minimal"},body:JSON.stringify(o)});if(!r.ok)throw new Error(r.status);poll()},
-    doc:id=>({delete:async()=>{const r=await fetch(U(n)+"?id=eq."+encodeURIComponent(id),{method:"DELETE",headers:H});if(!r.ok)throw new Error(r.status);poll()}}),
+    add:o=>n==="matches"?rpc("add_match",{p_t:o.t,p_w:o.w,p_l:o.l,p_c:o.c}):rpc("add_player",{p_name:o.name,p_t:o.t}),
+    doc:id=>({delete:()=>rpc("del_match",{p_id:Number(id)})}),
     onSnapshot:(cb,er)=>{let last="";const f=async()=>{try{const r=await fetch(U(n)+"?select=*&order=id.asc",{headers:H});if(!r.ok)throw new Error(r.status);const rows=await r.json(),j=JSON.stringify(rows);if(j===last)return;last=j;cb({docs:rows.map(x=>({id:String(x.id),data:()=>x}))})}catch(e){er&&er(e)}};ps.push(f);f()}
   })}
 }
@@ -167,7 +175,7 @@ function loc(){try{localStorage.setItem("bp",JSON.stringify({matches,extra}))}ca
 async function addMatch(m){
   if(db){await db.collection("matches").add(m)}else{matches.push({...m,id:"m"+m.t});loc();render()}
 }
-async function run(f){try{msg="";await f()}catch(e){msg="No se pudo guardar (¿tienes permiso para editar?)";render()}}
+async function run(f){try{msg="";await f()}catch(e){msg="No se pudo guardar: clave incorrecta o sin conexión.";render()}}
 
 document.addEventListener("click",e=>{
   const t=e.target;
