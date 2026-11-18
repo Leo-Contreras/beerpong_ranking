@@ -75,6 +75,20 @@ const P=[
 ["El Bala",5,["El mismo","8 cm"],["El mismo"]]
 ];
 const K=32,BONUS=.05;
+/* ====== PEGA AQUÍ TUS DATOS DE SUPABASE (Project Settings > API) ====== */
+const SB_URL="https://dgekzxbjhkdoyulkhmbx.supabase.co/rest/v1/",SB_KEY="sb_publishable_xXhL4MPVDmp00XirLq6dpg_uhjdFHwC";
+function sbDb(){
+  const H={apikey:SB_KEY,"Content-Type":"application/json"},ps=[];
+  if(SB_KEY.startsWith("eyJ"))H.Authorization="Bearer "+SB_KEY;
+  const U=t=>SB_URL.replace(/\/$/,"")+"/rest/v1/"+t,poll=()=>ps.forEach(f=>f());
+  setInterval(()=>{if(!document.hidden)poll()},8000);
+  return{collection:n=>({
+    add:async o=>{const r=await fetch(U(n),{method:"POST",headers:{...H,Prefer:"return=minimal"},body:JSON.stringify(o)});if(!r.ok)throw new Error(r.status);poll()},
+    doc:id=>({delete:async()=>{const r=await fetch(U(n)+"?id=eq."+encodeURIComponent(id),{method:"DELETE",headers:H});if(!r.ok)throw new Error(r.status);poll()}}),
+    onSnapshot:(cb,er)=>{let last="";const f=async()=>{try{const r=await fetch(U(n)+"?select=*",{headers:H});if(!r.ok)throw new Error(r.status);const rows=await r.json(),j=JSON.stringify(rows);if(j===last)return;last=j;cb({docs:rows.map(x=>({id:String(x.id),data:()=>x}))})}catch(e){er&&er(e)}};ps.push(f);f()}
+  })}
+}
+function localData(){try{const s=JSON.parse(localStorage.getItem("bp")||"{}");return{m:s.matches||[],p:s.extra||[]}}catch(e){return{m:[],p:[]}}}
 let matches=[],extra=[],db=null,loaded=false,tab="rk",msg="",mode=1;
 const ar=v=>Array.isArray(v)?v:[v];
 const $=s=>document.querySelector(s);
@@ -121,7 +135,8 @@ function render(){
     <p class="note">1 vaso = ganó apenas · 10 vasos = barrida total (más puntos).</p><p class="msg" id="msg">${esc(msg)}</p></div>
     <div class="card"><b>Últimos partidos</b>${rec.length?rec.map(m=>`<div class="ml"><span><b>${ar(m.w).map(esc).join(" y ")}</b> le ganó a ${ar(m.l).map(esc).join(" y ")} <span style="color:var(--mu)">(${m.c} vasos)</span></span><button class="btn s" data-d="${m.id}">Borrar</button></div>`).join(""):`<p class="note">Aún no hay partidos registrados.</p>`}</div>
     <div class="card"><b>Agregar jugador nuevo</b><div class="f" style="margin-top:8px"><div><label>Nombre</label><input id="np" maxlength="20"></div><div><button class="btn" id="addp">Agregar (empieza en 1000)</button></div></div></div>
-    ${db?"":`<p class="note">Modo local: los datos se guardan solo en este navegador.</p>`}`;
+    ${db?"":`<p class="note">Modo local: los datos se guardan solo en este navegador.</p>`}
+    ${(()=>{const d=localData();return db&&d.m.length+d.p.length?`<div class="card"><b>Datos guardados solo en este dispositivo</b><p class="note">Hay ${d.m.length} partidos y ${d.p.length} jugadores en este navegador. Súbelos para que todos los vean.</p><button class="btn" id="up">Subir a la nube</button></div>`:""})()}`;
   }else{
     h=`<div class="card"><b>1. Punto de partida</b><p>Cada quien empieza en el rating de su nivel actual: ${T.slice(0,6).map((t,i)=>`${t[0]} ${SEED[i]}`).join(" · ")}. Los jugadores nuevos empiezan en 1000.</p>
     <b>2. Probabilidad esperada</b><p><code>E = 1 / (1 + 10^((Elo rival − Elo tuyo) / 400))</code><br>Si eres Platino y juegas contra Bronce, se espera que ganes casi siempre.</p>
@@ -168,6 +183,13 @@ document.addEventListener("click",e=>{
     if(!n||calc().some(p=>p.n.toLowerCase()===n.toLowerCase())){msg="Nombre vacío o repetido.";return render()}
     run(async()=>{if(db)await db.collection("players").add({name:n,t:Date.now()});else{extra.push({id:"p"+Date.now(),name:n});loc();render()}})
   }
+  else if(t.id==="up"){
+    run(async()=>{const d=localData();
+      for(const m of d.m)await db.collection("matches").add({w:m.w,l:m.l,c:m.c,t:m.t});
+      for(const p of d.p)if(!calc().some(x=>x.n.toLowerCase()===p.name.toLowerCase()))await db.collection("players").add({name:p.name,t:Date.now()});
+      try{localStorage.removeItem("bp")}catch(e){}
+      msg="Datos subidos ✔";render()})
+  }
   else if(t.dataset.d){
     run(async()=>{if(db)await db.collection("matches").doc(t.dataset.d).delete();else{matches=matches.filter(m=>m.id!==t.dataset.d);loc();render()}})
   }
@@ -177,6 +199,7 @@ document.addEventListener("change",e=>{if(e.target.id==="mo"){mode=+e.target.val
 render();
 (async()=>{
   try{db=await claude.use("db")}catch(e){db=null}
+  if(!db&&SB_URL&&SB_KEY)db=sbDb();
   if(!db){
     try{const s=JSON.parse(localStorage.getItem("bp")||"{}");matches=s.matches||[];extra=s.extra||[]}catch(e){}
     loaded=true;return render();
