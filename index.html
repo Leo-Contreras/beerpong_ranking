@@ -87,7 +87,7 @@ function sbDb(){
     if(!k)k=prompt("Clave para guardar cambios:");
     if(!k)throw new Error("sin clave");
     const r=await fetch(U("rpc/"+f),{method:"POST",headers:H,body:JSON.stringify({clave:k,...a})});
-    if(!r.ok){try{localStorage.removeItem("bpk")}catch(e){}throw new Error(r.status)}
+    if(!r.ok){let tx="";try{tx=(await r.text()).slice(0,160)}catch(e){}try{localStorage.removeItem("bpk")}catch(e){}throw new Error(r.status+" "+tx)}
     try{localStorage.setItem("bpk",k)}catch(e){}
     poll()};
   return{collection:n=>({
@@ -97,7 +97,7 @@ function sbDb(){
   })}
 }
 function localData(){try{const s=JSON.parse(localStorage.getItem("bp")||"{}");return{m:s.matches||[],p:s.extra||[]}}catch(e){return{m:[],p:[]}}}
-let matches=[],extra=[],db=null,loaded=false,tab="rk",msg="",mode=1;
+let matches=[],extra=[],db=null,loaded=false,tab="rk",msg="",mode=1,cerr=false;
 const ar=v=>Array.isArray(v)?v:[v];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -130,7 +130,7 @@ function render(){
     <td class="elo">${Math.round(p.r)}</td><td>${p.w}–${p.l}</td><td>${g?Math.round(p.w/g*100)+"%":"—"}</td>
     <td class="${p.st>0?"up":p.st<0?"dn":""}">${p.st>0?"🔥 "+p.st+"V":p.st<0?p.st*-1+"D":"—"}</td>
     <td class="${p.last>0?"up":"dn"}">${g?(p.last>0?"+":"")+p.last.toFixed(1):"—"}</td></tr>`}).join("")}</table></div>
-    <p class="note">Toca un jugador para ver su perfil, pros y contras.${loaded?"":" Cargando datos…"}</p>`;
+    <p class="note">Toca un jugador para ver su perfil, pros y contras.${loaded?"":" Cargando datos…"} <b>${db?(cerr?"⚠ Sin conexión a la nube (revisa SB_URL y SB_KEY)":"☁ Conectado a la nube"):"💾 Modo local: no compartido"}</b></p>`;
   }else if(tab==="reg"){
     const o=rows.map(p=>`<option>${esc(p.n)}</option>`).join("");
     const rec=[...matches].sort((a,b)=>b.t-a.t).slice(0,15);
@@ -175,7 +175,7 @@ function loc(){try{localStorage.setItem("bp",JSON.stringify({matches,extra}))}ca
 async function addMatch(m){
   if(db){await db.collection("matches").add(m)}else{matches.push({...m,id:"m"+m.t});loc();render()}
 }
-async function run(f){try{msg="";await f()}catch(e){msg="No se pudo guardar: clave incorrecta o sin conexión.";render()}}
+async function run(f){try{msg="";await f()}catch(e){msg="No se pudo guardar: "+(e&&e.message||"error");render()}}
 
 document.addEventListener("click",e=>{
   const t=e.target;
@@ -216,7 +216,7 @@ render();
   }
   const tm=setTimeout(()=>{if(!loaded){msg="No se pudo contactar la base de datos aún.";render()}},10000);
   const done=()=>{loaded=true;clearTimeout(tm);render()};
-  db.collection("matches").onSnapshot(s=>{matches=s.docs.map(d=>({id:d.id,...d.data()}));done()},()=>{if(!loaded)done()});
-  db.collection("players").onSnapshot(s=>{extra=s.docs.map(d=>({id:d.id,...d.data()}));done()},()=>{if(!loaded)done()});
+  db.collection("matches").onSnapshot(s=>{matches=s.docs.map(d=>({id:d.id,...d.data()}));cerr=false;done()},()=>{if(!cerr){cerr=true;render()}if(!loaded)done()});
+  db.collection("players").onSnapshot(s=>{extra=s.docs.map(d=>({id:d.id,...d.data()}));cerr=false;done()},()=>{if(!cerr){cerr=true;render()}if(!loaded)done()});
 })();
 </script></body></html>
